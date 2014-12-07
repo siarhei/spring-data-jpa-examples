@@ -1,5 +1,5 @@
 <dataset>
-    <todos id="1" dtype="TodoRich" description="Lorem ipsum" title="Foo" creator="crt1" updater="upd1"/>
-    <todos id="2" dtype="TodoRich" description="Lorem ipsum" title="Bar" creator="crt2" updater="upd2"/>
+    <todos id="1" dtype="TodoRich" description="Lorem ipsum" title="Foo" creator="crt1" updater="upd1" version="0"/>
+    <todos id="2" dtype="TodoRich" description="Lorem ipsum" title="Bar" creator="crt2" updater="upd2" version="0"/>
 </dataset>
 

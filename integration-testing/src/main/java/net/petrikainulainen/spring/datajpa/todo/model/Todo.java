@@ -23,8 +23,8 @@ public class Todo {
     @Column(name = "title", nullable = false, length = MAX_LENGTH_TITLE)
     private String title;
 
-    /*@Version
-    private long version;*/
+    @Version
+    private long version;
 
     public Todo() {
 
@@ -42,8 +42,8 @@ public class Todo {
         return title;
     }
 
-    /*public long getVersion() {
+    public long getVersion() {
         return version;
-    }*/
+    }
 
 }
