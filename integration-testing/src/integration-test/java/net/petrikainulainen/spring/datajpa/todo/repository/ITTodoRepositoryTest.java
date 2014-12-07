@@ -15,6 +15,7 @@ import org.springframework.test.context.support.DirtiesContextTestExecutionListe
 import org.springframework.test.context.transaction.TransactionalTestExecutionListener;
 
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
