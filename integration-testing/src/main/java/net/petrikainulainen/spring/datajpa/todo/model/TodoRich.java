@@ -1,5 +1,7 @@
 package net.petrikainulainen.spring.datajpa.todo.model;
 
+import org.hibernate.annotations.DynamicUpdate;
+
 import javax.persistence.*;
 
 /**
@@ -7,6 +9,7 @@ import javax.persistence.*;
  * @since 07.12.2014
  */
 @Entity
+@DynamicUpdate
 public class TodoRich extends Todo {
     @Embedded
     @AttributeOverrides({

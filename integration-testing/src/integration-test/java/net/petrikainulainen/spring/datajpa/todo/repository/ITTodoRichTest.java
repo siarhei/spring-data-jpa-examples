@@ -9,6 +9,8 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestExecutionListeners;
@@ -26,6 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.is;
@@ -46,12 +49,15 @@ import static org.junit.Assert.assertThat;
         DbUnitTestExecutionListener.class })
 @DatabaseSetup("todoData.xml")
 public class ITTodoRichTest {
+
     @Autowired
     private TodoRepository repository;
     @Autowired
     private PlatformTransactionManager transactionManager;
 
     private class Executor implements Runnable {
+        protected final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(this.getClass());
+
         private final PlatformTransactionManager ptm;
         private final Long todoId;
         private final TodoRepository repository;
@@ -59,29 +65,42 @@ public class ITTodoRichTest {
         private final TransactionTemplate transactionTemplate;
         private final long sleepBeforeCommit;
 
-        public Executor(Long todoId, PlatformTransactionManager ptm, TodoRepository repository, TodoUpdater updater, long ms) {
+        public Executor(Long todoId, PlatformTransactionManager ptm, TodoRepository repository, TodoUpdater updater, long ms, String name) {
             this.todoId = todoId;
             this.ptm = ptm;
             this.repository = repository;
             this.updater = updater;
             this.sleepBeforeCommit = ms;
             this.transactionTemplate = new TransactionTemplate(ptm, new DefaultTransactionDefinition(TransactionDefinition.PROPAGATION_REQUIRES_NEW));
+            Thread.currentThread().setName(name);
         }
 
         @Override
         public void run() {
-            transactionTemplate.execute(new TransactionCallbackWithoutResult() {
-                @Override
-                protected void doInTransactionWithoutResult(TransactionStatus status) {
-                    TodoRich todo = (TodoRich) repository.findOne(todoId);
-                    updater.update(todo);
-                    try {
-                        TimeUnit.MILLISECONDS.sleep(sleepBeforeCommit);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+            logger.info("Running");
+            try {
+                transactionTemplate.execute(new TransactionCallbackWithoutResult() {
+                    @Override
+                    protected void doInTransactionWithoutResult(TransactionStatus status) {
+                        logger.info("FIND BY ID");
+                        TodoRich todo = (TodoRich) repository.findOne(todoId);
+                        try {
+                            TimeUnit.MILLISECONDS.sleep(sleepBeforeCommit);
+                            logger.info("UPDATE");
+                            updater.update(todo);
+                            TimeUnit.MILLISECONDS.sleep(sleepBeforeCommit);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+
+
                     }
-                }
-            });
+                });
+            } catch (Exception e) {
+                logger.warn("Exception has occurred", e);
+            } finally {
+                logger.info("END OF TX");
+            }
         }
     }
 
@@ -96,6 +115,7 @@ public class ITTodoRichTest {
             @Override
             public void update(TodoRich todo) {
                 todo.getUpdatedRef().setName("upd name");
+                todo.setDescription("updated description");
             }
         };
 
@@ -106,11 +126,11 @@ public class ITTodoRichTest {
             }
         };
         final Long todoId = 1L;
-        executorService.execute(new Executor(todoId, transactionManager, repository, upd, 100));
-        executorService.execute(new Executor(todoId, transactionManager, repository, crt, 200));
+        executorService.execute(new Executor(todoId, transactionManager, repository, upd, 100, "updT"));
+        executorService.execute(new Executor(todoId, transactionManager, repository, crt, 2000, "crtT"));
 
         try {
-            TimeUnit.SECONDS.sleep(2);
+            TimeUnit.SECONDS.sleep(5);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
